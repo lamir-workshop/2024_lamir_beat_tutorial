@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 import os
-from operator import itemgetter
 
 import madmom
 import numpy as np
-from madmom.processors import ParallelProcessor, SequentialProcessor
+from madmom.processors import SequentialProcessor
 from madmom.audio.signal import SignalProcessor, FramedSignalProcessor
 from madmom.audio.stft import ShortTimeFourierTransformProcessor
 from madmom.audio.spectrogram import FilteredSpectrogramProcessor, LogarithmicSpectrogramProcessor
@@ -76,8 +75,8 @@ class BeatData(Dataset):
         #     print(f"{tid} has no downbeat information. masking\n")
         #     downbeats = np.ones(len(x), dtype="float32") * MASK_VALUE
 
-        # FIXME: adding this because torch is bothered by our batchsize=1
         data["tid"] = tid
+        # FIXME: adding this because torch is bothered by our batchsize=1
         data["x"] = np.expand_dims(x_padded, axis=0)
         data["beats"] = beats
         data["beats_ann"] = track.beats.times
@@ -130,10 +129,8 @@ def custom_dataset_loader(path, dataset_name, folder="datasets"):
 
 
 if __name__ == "__main__":
+    # testing our dataloader
     import mirdata
-    # data_home = "/home/gigibs/Documents/datasets/"
-    # data_home = "/media/gigibs/DD02EEEC68459F17/datasets"
-    # brid = custom_dataset_loader(data_home, dataset_name="brid", folder="")
 
     gtzan_mini = mirdata.initialize("gtzan_genre", version="mini")
     # gtzan_mini.download()
