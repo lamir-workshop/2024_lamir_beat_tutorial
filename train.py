@@ -5,8 +5,8 @@ import mirdata
 import mir_eval
 import wandb
 from lightning.pytorch.callbacks import ModelCheckpoint
-from sklearn.model_selection import train_test_split
 from lightning.pytorch.loggers import WandbLogger
+from sklearn.model_selection import train_test_split
 
 from config import PARAMS_TRAIN
 from dataloader import *
