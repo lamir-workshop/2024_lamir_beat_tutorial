@@ -3,18 +3,22 @@ from datetime import datetime
 import lightning as L
 import mirdata
 import mir_eval
+import wandb
 from lightning.pytorch.callbacks import ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from lightning.pytorch.loggers import WandbLogger
 
+from config import PARAMS_TRAIN
 from dataloader import *
 from model import *
 
+
 class PLTCN(L.LightningModule):
-    def __init__(self, model, loss):
+    def __init__(self, model, params):
         super().__init__()
         self.model = model
-        self.loss = self._get_loss_fn(loss)
+        self.loss = self._get_loss_fn(params["LOSS"])
+        self.learning_rate = params["LEARNING_RATE"]
         self.test_fmeasure = []
 
 
@@ -60,6 +64,9 @@ class PLTCN(L.LightningModule):
         beats_prediction = beat_dbn(beats_act)
 
         # add mir_eval call to calculate metrics
+        # check
+        # https://mir-evaluation.github.io/mir_eval/#module-mir_eval.beat
+        # if you want to explore other metrics
         fmeasure = mir_eval.beat.f_measure(beats_target, beats_prediction)
         self.test_fmeasure.append(fmeasure)
         self.log("test_fmeasure", fmeasure, on_step=True)
@@ -104,41 +111,54 @@ def load_tracks(datasets):
 
 
 if __name__ == "__main__":
-    NUM_WORKERS = 5
-    CKPTS_DIR = "trained_models"
+    # load params
+    PARAMS = PARAMS_TRAIN
+
+    # load dataset
     gtzan_mini = mirdata.initialize("gtzan_genre", version="mini")
     gtzan_mini.download()
 
+    # split data into train/val/test
     dataset_keys, dataset_tracks = load_tracks([gtzan_mini])
-
     train_keys, test_keys = train_test_split(dataset_keys, test_size=0.2, random_state=42)
     train_keys, val_keys = train_test_split(train_keys, test_size=0.25, random_state=42)
 
-    print(len(train_keys), len(val_keys), len(test_keys))
-
+    # create dataloaders
     train_data = BeatData(dataset_tracks, train_keys, widen=True)
     val_data = BeatData(dataset_tracks, val_keys, widen=True)
     test_data = BeatData(dataset_tracks, test_keys, widen=True)
 
-    train_dataloader = DataLoader(train_data, batch_size=1, num_workers=NUM_WORKERS)
-    val_dataloader = DataLoader(val_data, batch_size=1, num_workers=NUM_WORKERS)
-    test_dataloader = DataLoader(test_data, batch_size=1, num_workers=NUM_WORKERS)
+    train_dataloader = DataLoader(train_data, batch_size=1, num_workers=PARAMS["NUM_WORKERS"])
+    val_dataloader = DataLoader(val_data, batch_size=1, num_workers=PARAMS["NUM_WORKERS"])
+    test_dataloader = DataLoader(test_data, batch_size=1, num_workers=PARAMS["NUM_WORKERS"])
 
-    learning_rate = 0.005
-    n_filters = 20
-    kernel_size = 5
-    dropout = 0.15
-    n_dilations = 11
+    # instatiate models
+    tcn = MultiTracker(
+        n_filters=PARAMS["N_FILTERS"],
+        n_dilations=PARAMS["N_DILATIONS"],
+        kernel_size=PARAMS["KERNEL_SIZE"],
+        dropout_rate=PARAMS["DROPOUT"]
+    )
+    model = PLTCN(tcn, PARAMS)
 
-    tcn = MultiTracker(n_filters, n_dilations, kernel_size=kernel_size, dropout_rate=dropout)
-    model = PLTCN(tcn, "bce")
-
+    # define where to save the checkpoint
+    # and create checkpoint file with the current timestamp
+    CKPTS_DIR = "trained_models"
     timestamp = datetime.now().strftime("%Y%m%d%H%M")
     ckpt_name = f"tcn_{timestamp}"
-    # ckpt_name = "tcn_202412051834"
+
+    # log into wandb
+    run = wandb.init(
+        project="LAMIR_beat_tutorial",
+        name=f"TCN_train_{timestamp}",
+        config=PARAMS
+    )
+    logger = WandbLogger()
+
     trainer = L.Trainer(
-        max_epochs=20,
-        gradient_clip_val=0.5,
+        max_epochs=PARAMS["N_EPOCHS"],
+        logger=logger,
+        gradient_clip_val=PARAMS["GRADIENT_CLIP"],
         callbacks=[
             ModelCheckpoint(
                 dirpath=CKPTS_DIR,
@@ -154,3 +174,5 @@ if __name__ == "__main__":
                  ckpt_path=f"{CKPTS_DIR}/{ckpt_name}.ckpt",
                  verbose=True
     )
+
+    run.finish()
