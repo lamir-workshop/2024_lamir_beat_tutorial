@@ -7,7 +7,7 @@ PARAMS_TRAIN = {
     "N_EPOCHS": 15,
     "GRADIENT_CLIP": 0.5,
     "LOSS": "BCE",
-    "NUM_WORKERS": 7
+    "NUM_WORKERS": 7,
 }
 
 PARAMS_FINETUNE = {
@@ -21,5 +21,5 @@ PARAMS_FINETUNE = {
     "LOSS": "BCE",
     "NUM_WORKERS": 7,
     # Change here with your checkpoint filename
-    "CHECKPOINT_FILE": "tcn_202412052128"
+    "CHECKPOINT_FILE": "tcn_202412052128",
 }

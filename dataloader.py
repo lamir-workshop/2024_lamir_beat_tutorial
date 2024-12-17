@@ -7,7 +7,10 @@ import numpy as np
 from madmom.processors import SequentialProcessor
 from madmom.audio.signal import SignalProcessor, FramedSignalProcessor
 from madmom.audio.stft import ShortTimeFourierTransformProcessor
-from madmom.audio.spectrogram import FilteredSpectrogramProcessor, LogarithmicSpectrogramProcessor
+from madmom.audio.spectrogram import (
+    FilteredSpectrogramProcessor,
+    LogarithmicSpectrogramProcessor,
+)
 from scipy.ndimage import maximum_filter1d
 from torch.utils.data import Dataset, DataLoader
 
@@ -17,6 +20,7 @@ FPS = 100
 NUM_BANDS = 12
 FFT_SIZE = 2048
 MASK_VALUE = -1
+
 
 class BeatData(Dataset):
     def __init__(self, dataset, split_tracks, fps=100, widen=False):
@@ -64,8 +68,7 @@ class BeatData(Dataset):
         if self.widen:
             # we skip masked values
             if not np.allclose(beats, -1):
-                np.maximum(beats, maximum_filter1d(beats, size=3) * 0.5,
-                        out=beats)
+                np.maximum(beats, maximum_filter1d(beats, size=3) * 0.5, out=beats)
 
         # try:
         #     downbeats = beats.positions.astype(int) == 1
@@ -85,13 +88,14 @@ class BeatData(Dataset):
 
         return data
 
-
     def __len__(self):
         return len(self.keys)
 
 
 class PreProcessor(SequentialProcessor):
-    def __init__(self, frame_size=FFT_SIZE, num_bands=NUM_BANDS, log=np.log, add=1e-6, fps=FPS):
+    def __init__(
+        self, frame_size=FFT_SIZE, num_bands=NUM_BANDS, log=np.log, add=1e-6, fps=FPS
+    ):
         # resample to a fixed sample rate in order to get always the same number of filter bins
         sig = SignalProcessor(num_channels=1, sample_rate=44100)
         # split audio signal in overlapping frames
@@ -121,9 +125,9 @@ def custom_dataset_loader(path, dataset_name, folder="datasets"):
     print(f"Loading {dataset_name} through custom loader")
     datasetdir = os.path.join(path, folder, dataset_name)
     dataset = custom_dataset.Dataset(
-        dataset_name = dataset_name,
+        dataset_name=dataset_name,
         data_home=os.path.join(datasetdir, "audio"),
-        annotations_home=os.path.join(datasetdir, "annotations")
+        annotations_home=os.path.join(datasetdir, "annotations"),
     )
     return dataset
 

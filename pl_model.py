@@ -4,6 +4,7 @@ import lightning as L
 import torch
 import torch.nn.functional as F
 
+
 class PLTCN(L.LightningModule):
     def __init__(self, model, params):
         super().__init__()
@@ -12,15 +13,12 @@ class PLTCN(L.LightningModule):
         self.learning_rate = params["LEARNING_RATE"]
         self.test_fmeasure = []
 
-
     def _get_loss_fn(self, loss):
         # for now using only BCE
         return F.binary_cross_entropy
 
-
     def forward(self, x):
         return self.model(x)
-
 
     def training_step(self, batch, batch_idx):
         x = batch["x"]
@@ -31,7 +29,6 @@ class PLTCN(L.LightningModule):
         self.log("train_loss", loss, prog_bar=True, on_step=True, on_epoch=True)
         return loss
 
-
     def validation_step(self, batch, batch_idx):
         x = batch["x"]
         beats_ann = batch["beats"]
@@ -41,7 +38,6 @@ class PLTCN(L.LightningModule):
         self.log("val_loss", loss, prog_bar=True, on_step=True, on_epoch=True)
         return loss
 
-
     def test_step(self, batch, batch_idx):
         x = batch["x"]
         beats_target = batch["beats_ann"].detach().cpu().numpy().squeeze()
@@ -49,8 +45,7 @@ class PLTCN(L.LightningModule):
         beats_act = output["beats"].squeeze().detach().cpu().numpy()
 
         beat_dbn = madmom.features.beats.DBNBeatTrackingProcessor(
-            min_bpm=55.0, max_bpm=215.0, fps=100, transition_lambda=100,
-            online=False
+            min_bpm=55.0, max_bpm=215.0, fps=100, transition_lambda=100, online=False
         )
         beats_prediction = beat_dbn(beats_act)
 
@@ -62,7 +57,6 @@ class PLTCN(L.LightningModule):
         self.test_fmeasure.append(fmeasure)
         self.log("test_fmeasure", fmeasure, on_step=True)
 
-
         return fmeasure
 
     # Uncomment to see the metrics per item
@@ -70,14 +64,18 @@ class PLTCN(L.LightningModule):
     #     for idx, v in enumerate(self.test_fmeasure):
     #         self.log(f"item_{idx}", v)
 
-
     def configure_optimizers(self):
         optimizer = torch.optim.RAdam(self.parameters(), lr=0.005)
         scheduler = {
-                "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, mode='min', factor=0.2, patience=10,
-                    threshold=1e-3, cooldown=0, min_lr=1e-7
-                ),
-                "monitor": "val_loss"
-            }
+            "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer,
+                mode="min",
+                factor=0.2,
+                patience=10,
+                threshold=1e-3,
+                cooldown=0,
+                min_lr=1e-7,
+            ),
+            "monitor": "val_loss",
+        }
         return [optimizer], [scheduler]

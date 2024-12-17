@@ -37,13 +37,13 @@ class ResBlock(nn.Module):
             in_channels=in_channels,
             out_channels=n_filters,
             kernel_size=kernel_size,
-            dilation=dilation_rate*2,
+            dilation=dilation_rate * 2,
             padding=padding,
         )
         self.elu = nn.ELU()
         self.dropout = nn.Dropout(dropout_rate)
         self.conv_3 = nn.Conv1d(
-            in_channels=2*n_filters,
+            in_channels=2 * n_filters,
             out_channels=n_filters,
             kernel_size=1,
             padding=padding,
@@ -75,7 +75,9 @@ class TCN(nn.Module):
 
         self.tcn_layers = nn.ModuleDict({})
         for idx, d in enumerate(dilations):
-            self.tcn_layers[f"tcn_{idx}"] = ResBlock(d, n_filters, kernel_size, padding, dropout_rate)
+            self.tcn_layers[f"tcn_{idx}"] = ResBlock(
+                d, n_filters, kernel_size, padding, dropout_rate
+            )
 
         self.activation = nn.ELU()
         return
@@ -98,8 +100,9 @@ class TCN(nn.Module):
 
 
 class MultiTracker(nn.Module):
-    def __init__(self, n_filters, n_dilations, kernel_size, dropout_rate,
-            verbose=False):
+    def __init__(
+        self, n_filters, n_dilations, kernel_size, dropout_rate, verbose=False
+    ):
         super().__init__()
         padding = "same"
         self.verbose = verbose
@@ -189,7 +192,7 @@ class MultiTracker(nn.Module):
             print("skip out", skip.shape)
 
         # reshape x so it fits our linear layer
-        x = x.transpose(-2,-1)
+        x = x.transpose(-2, -1)
         if self.verbose:
             print("tcn tranposed", x.shape)
 
@@ -237,7 +240,9 @@ if __name__ == "__main__":
     dropout = 0.15
 
     # beats , downbeats, tempo = MultiTracker(n_filters, n_dilations=11, kernel_size=kernel_size, dropout_rate=dropout)(test_input)
-    beats = MultiTracker(n_filters, n_dilations=11, kernel_size=kernel_size, dropout_rate=dropout)(test_input)
+    beats = MultiTracker(
+        n_filters, n_dilations=11, kernel_size=kernel_size, dropout_rate=dropout
+    )(test_input)
 
     print("\noutputs")
     print("beats", beats.shape)
