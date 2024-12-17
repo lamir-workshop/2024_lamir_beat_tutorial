@@ -20,5 +20,6 @@ PARAMS_FINETUNE = {
     "N_EPOCHS": 5,
     "LOSS": "BCE",
     "NUM_WORKERS": 7,
-    "CHECKPOINT_FILE": "tcn_202412162313"
+    # Change here with your checkpoint filename
+    "CHECKPOINT_FILE": "tcn_202412052128"
 }
