@@ -6,11 +6,12 @@ import mirdata
 import wandb
 from lightning.pytorch.loggers import WandbLogger
 from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader
 
-from dataloader import *
-from model import *
-from train import PLTCN
 from config import PARAMS_FINETUNE
+from dataloader import BeatData
+from model import MultiTracker
+from pl_model import PLTCN
 
 if __name__ == "__main__":
     # load params
