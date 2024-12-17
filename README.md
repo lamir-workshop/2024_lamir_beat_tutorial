@@ -1,6 +1,8 @@
 # LAMIR: Beat Tracking Tutorial
 
-Source code for the 2024 LAMIR beat tracking tutorial
+source code for the 2024 LAMIR beat tracking tutorial
+
+authored by [Giovana Morais](https://github.com/giovana-morais)
 
 ---
 
@@ -47,13 +49,20 @@ PARAMS_FINETUNE = {
 }
 ```
 
-and then run
+run the script by specifying in which dataset you want to finetune it:
 
 ```bash
-python finetune.py
+python finetune.py --dataset=brid
+# or
+python finetune.py --dataset=candombe
 ```
 
-**NOTE**: if you wish to expand the finetuning script to candombe, as shown in the
-tutorial, just replace the mirdata dataset from `brid` to `candombe` and remove
-the pattern matching. the repo will be soon update to add the candombe
-finetuning example.
+if you want to download the datasets, just provide the `--download` flag
+
+```bash
+python finetune.py --dataset=brid --download
+# or
+python finetune.py --dataset=candombe --download
+```
+
+**NOTE**: this will run the download with `force_overwrite`.
