@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 import os
-from operator import itemgetter
 
 import madmom
 import numpy as np
-from madmom.processors import ParallelProcessor, SequentialProcessor
+from madmom.processors import SequentialProcessor
 from madmom.audio.signal import SignalProcessor, FramedSignalProcessor
 from madmom.audio.stft import ShortTimeFourierTransformProcessor
 from madmom.audio.spectrogram import FilteredSpectrogramProcessor, LogarithmicSpectrogramProcessor

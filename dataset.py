@@ -1,11 +1,10 @@
 import os
 import types
-from collections import Counter
 from typing import BinaryIO, Optional, TextIO, Tuple
 
 import librosa
 import numpy as np
-from mirdata import annotations, initialize
+from mirdata import annotations
 from mirdata.core import cached_property
 
 MAX_STR_LEN = 500
@@ -85,7 +84,8 @@ def load_beats(fhandle: TextIO) -> annotations.BeatData:
             time_unit="s",
             positions=positions,
             position_unit="bar_index")
-    except:
+    except Exception:
+        print("beat positions missing. assigning it to None")
         # if we don't have the positions (for now) consider it None
         beat_data = None
 
