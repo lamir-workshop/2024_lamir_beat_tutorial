@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-import os
-
 import madmom
 import numpy as np
 from madmom.processors import SequentialProcessor
@@ -13,8 +11,6 @@ from madmom.audio.spectrogram import (
 )
 from scipy.ndimage import maximum_filter1d
 from torch.utils.data import Dataset, DataLoader
-
-import dataset as custom_dataset
 
 FPS = 100
 NUM_BANDS = 12
@@ -110,26 +106,6 @@ class PreProcessor(SequentialProcessor):
         super(PreProcessor, self).__init__((sig, frames, stft, filt, spec, np.array))
         # safe fps as attribute (needed for quantization of events)
         self.fps = fps
-
-
-def custom_dataset_loader(path, dataset_name, folder="datasets"):
-    """
-    Loads a custom dataset
-
-    Parameters
-    ----------
-    path : str
-    dataset_name : str
-    folder : str
-    """
-    print(f"Loading {dataset_name} through custom loader")
-    datasetdir = os.path.join(path, folder, dataset_name)
-    dataset = custom_dataset.Dataset(
-        dataset_name=dataset_name,
-        data_home=os.path.join(datasetdir, "audio"),
-        annotations_home=os.path.join(datasetdir, "annotations"),
-    )
-    return dataset
 
 
 if __name__ == "__main__":

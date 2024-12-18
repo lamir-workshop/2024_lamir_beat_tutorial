@@ -1,3 +1,4 @@
+import argparse
 import re
 from datetime import datetime
 
@@ -13,13 +14,24 @@ from dataloader import BeatData
 from model import MultiTracker
 from pl_model import PLTCN
 
-if __name__ == "__main__":
-    # load params
-    PARAMS = PARAMS_FINETUNE
 
-    # load dataset
+def _load_candombe(download=False):
+    candombe = mirdata.initialize("candombe", version="default")
+
+    if download:
+        candombe.download(force_overwrite=True)
+
+    dataset_tracks = candombe.load_tracks()
+    dataset_keys = list(dataset_tracks.keys())
+
+    return dataset_tracks, dataset_keys
+
+
+def _load_brid(download=False):
     brid = mirdata.initialize("brid", version="default")
-    # brid.download()
+
+    if download:
+        brid.download(force_overwrite=True)
 
     dataset_tracks = brid.load_tracks()
     dataset_keys = list(dataset_tracks.keys())
@@ -27,6 +39,38 @@ if __name__ == "__main__":
     # it is not necessary in the case of candombe
     pattern = r"^\[\d{4}\] M\d+-\d+-[A-Z]+$"
     dataset_keys = [key for key in dataset_keys if bool(re.match(pattern, key))]
+
+    return dataset_tracks, dataset_keys
+
+def create_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        required=True,
+        help="dataset name. supported options are ['brid', 'candombe']"
+    )
+    parser.add_argument(
+        "--download",
+        action="store_true",
+        required=False,
+        help="download the dataset"
+    )
+    return parser
+
+if __name__ == "__main__":
+    # load params
+    PARAMS = PARAMS_FINETUNE
+    args = create_parser().parse_args()
+
+    if args.dataset == "candombe":
+        dataset_tracks, dataset_keys = _load_candombe(args.download)
+    elif args.dataset == "brid":
+        dataset_tracks, dataset_keys = _load_brid(args.download)
+    else:
+        raise ValueError(
+            "Dataset not supported. Supported options are 'brid' and 'candombe'"
+        )
 
     # split keys into train/val/test
     train_keys, test_keys = train_test_split(
