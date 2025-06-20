@@ -12,8 +12,8 @@ def masked_binary_cross_entropy(pred, target):
     """
 	# 1 where valid, 0 otherwise
     mask = (target != -1).float()
-    loss = F.binary_cross_entropy(pred, target, reduction='none')
+    loss = F.binary_cross_entropy(pred*mask, target*mask)
 
-    # avoid division by 0
-    masked_loss = (loss * mask).sum() / (mask.sum() + 1e-8)
-    return masked_loss
+    # # avoid division by 0
+    # masked_loss = (loss * mask).sum() / (mask.sum() + 1e-8)
+    return loss

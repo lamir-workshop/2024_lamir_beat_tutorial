@@ -27,10 +27,12 @@ class PLTCN(L.LightningModule):
         x = batch["x"]
         beats_ann = batch["beats"]
         downbeats_ann = batch["downbeats"]
+        # print("annotations", beats_ann.shape, downbeats_ann.shape)
 
         output = self(x)
         beats_det = output["beats"].squeeze(-1)
         downbeats_det = output["downbeats"].squeeze(-1)
+        # print("detections", beats_det.shape, downbeats_det.shape)
 
         beat_loss = self.loss(beats_det, beats_ann)
         downbeat_loss = self.loss(downbeats_det, downbeats_ann)
@@ -45,10 +47,22 @@ class PLTCN(L.LightningModule):
     def validation_step(self, batch, batch_idx):
         x = batch["x"]
         beats_ann = batch["beats"]
+        downbeats_ann = batch["downbeats"]
+        # print("annotations", beats_ann.shape, downbeats_ann.shape)
+
         output = self(x)
         beats_det = output["beats"].squeeze(-1)
-        loss = self.loss(beats_det, beats_ann)
-        self.log("val_loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        downbeats_det = output["downbeats"].squeeze(-1)
+        # print("detections", beats_det.shape, downbeats_det.shape)
+
+        beat_loss = self.loss(beats_det, beats_ann)
+        downbeat_loss = self.loss(downbeats_det, downbeats_ann)
+        loss = beat_loss + downbeat_loss
+
+        self.log("val_beat_loss", beat_loss, prog_bar=True, on_epoch=True)
+        self.log("val_downbeat_loss", downbeat_loss, prog_bar=True, on_epoch=True)
+        self.log("val_loss", loss, prog_bar=True, on_epoch=True)
+
         return loss
 
     def test_step(self, batch, batch_idx):
