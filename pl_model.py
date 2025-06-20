@@ -4,6 +4,8 @@ import lightning as L
 import torch
 import torch.nn.functional as F
 
+import losses
+
 
 class PLTCN(L.LightningModule):
     def __init__(self, model, params):
@@ -15,18 +17,29 @@ class PLTCN(L.LightningModule):
 
     def _get_loss_fn(self, loss):
         # for now using only BCE
-        return F.binary_cross_entropy
+        return losses.masked_binary_cross_entropy
 
     def forward(self, x):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
+        # get beat and downbeat annotations
         x = batch["x"]
         beats_ann = batch["beats"]
+        downbeats_ann = batch["downbeats"]
+
         output = self(x)
         beats_det = output["beats"].squeeze(-1)
-        loss = self.loss(beats_det, beats_ann)
-        self.log("train_loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        downbeats_det = output["downbeats"].squeeze(-1)
+
+        beat_loss = self.loss(beats_det, beats_ann)
+        downbeat_loss = self.loss(downbeats_det, downbeats_ann)
+        loss = beat_loss + downbeat_loss
+
+        self.log("train_beat_loss", beat_loss, prog_bar=True, on_epoch=True)
+        self.log("train_downbeat_loss", downbeat_loss, prog_bar=True, on_epoch=True)
+        self.log("train_loss", loss, prog_bar=True, on_epoch=True)
+
         return loss
 
     def validation_step(self, batch, batch_idx):

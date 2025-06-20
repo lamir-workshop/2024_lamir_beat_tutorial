@@ -66,20 +66,20 @@ class BeatData(Dataset):
             if not np.allclose(beats, -1):
                 np.maximum(beats, maximum_filter1d(beats, size=3) * 0.5, out=beats)
 
-        # try:
-        #     downbeats = beats.positions.astype(int) == 1
-        #     downbeats = t.beats.times[downbeats]
-        #     downbeats = madmom.utils.quantize_events(downbeats, fps=self.fps, length=len(x))
-        # except AttributeError:
-        #     print(f"{tid} has no downbeat information. masking\n")
-        #     downbeats = np.ones(len(x), dtype="float32") * MASK_VALUE
+        try:
+            downbeats = beats.positions.astype(int) == 1
+            downbeats = t.beats.times[downbeats]
+            downbeats = madmom.utils.quantize_events(downbeats, fps=self.fps, length=len(x))
+        except AttributeError:
+            print(f"{tid} has no downbeat information. masking\n")
+            downbeats = np.ones(len(x), dtype="float32") * MASK_VALUE
 
         data["tid"] = tid
         # FIXME: adding this because torch is bothered by our batchsize=1
         data["x"] = np.expand_dims(x_padded, axis=0)
         data["beats"] = beats
         data["beats_ann"] = track.beats.times
-        # data["downbeats"] = downbeats
+        data["downbeats"] = downbeats
         # data["tempo"] = tempo
 
         return data
@@ -122,11 +122,14 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(train_data)
 
     for i in train_dataloader:
-        in_, out = i["x"], i["beats"]
-        print(in_.shape)
-        print(out.shape)
-        print(out)
-        test = out.detach().cpu()
+        x, beats, downbeats = i["x"], i["beats"], i["downbeats"]
+        print("x.shape", x.shape)
+        print("beats.shape", beats.shape)
+        print("downbeats.shape", downbeats.shape)
+        print("beats", beats)
+        print("downbeats", downbeats)
+
+        test = beats.detach().cpu()
         print(len(test[test > 0]))
         print(dataset_tracks[train_keys[0]].beats.times)
         break

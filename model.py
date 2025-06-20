@@ -207,7 +207,7 @@ class MultiTracker(nn.Module):
         # downbeats head
         downbeats = self.downbeats_dropout(x)
         downbeats = self.downbeats_dense(downbeats)
-        # downbeats = self.downbeats_act(downbeats)
+        downbeats = self.downbeats_act(downbeats)
         if self.verbose:
             print("downbeats", downbeats.shape)
 
@@ -226,7 +226,7 @@ class MultiTracker(nn.Module):
 
         activations = {}
         activations["beats"] = beats
-        # activations["downbeats"] = downbeats
+        activations["downbeats"] = downbeats
         # activations["tempo"] = tempo
 
         return activations
@@ -240,7 +240,7 @@ if __name__ == "__main__":
     dropout = 0.15
 
     # beats , downbeats, tempo = MultiTracker(n_filters, n_dilations=11, kernel_size=kernel_size, dropout_rate=dropout)(test_input)
-    beats = MultiTracker(
+    beats, downbeats = MultiTracker(
         n_filters, n_dilations=11, kernel_size=kernel_size, dropout_rate=dropout
     )(test_input)
 

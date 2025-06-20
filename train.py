@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     # load dataset
     gtzan_mini = mirdata.initialize("gtzan_genre", version="mini")
-    gtzan_mini.download()
+    gtzan_mini.download(['index'])
 
     dataset_tracks = gtzan_mini.load_tracks()
     dataset_keys = list(dataset_tracks.keys())
