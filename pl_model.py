@@ -23,21 +23,22 @@ class PLTCN(L.LightningModule):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        # get beat and downbeat annotations
+        # get annotations
         x = batch["x"]
         beats_ann = batch["beats"]
         downbeats_ann = batch["downbeats"]
-        # print("annotations", beats_ann.shape, downbeats_ann.shape)
 
+        # get detections
         output = self(x)
         beats_det = output["beats"].squeeze(-1)
         downbeats_det = output["downbeats"].squeeze(-1)
-        # print("detections", beats_det.shape, downbeats_det.shape)
 
+        # calculate losses
         beat_loss = self.loss(beats_det, beats_ann)
         downbeat_loss = self.loss(downbeats_det, downbeats_ann)
         loss = beat_loss + downbeat_loss
 
+        # log them
         self.log("train_beat_loss", beat_loss, prog_bar=True, on_epoch=True)
         self.log("train_downbeat_loss", downbeat_loss, prog_bar=True, on_epoch=True)
         self.log("train_loss", loss, prog_bar=True, on_epoch=True)
@@ -48,12 +49,10 @@ class PLTCN(L.LightningModule):
         x = batch["x"]
         beats_ann = batch["beats"]
         downbeats_ann = batch["downbeats"]
-        # print("annotations", beats_ann.shape, downbeats_ann.shape)
 
         output = self(x)
         beats_det = output["beats"].squeeze(-1)
         downbeats_det = output["downbeats"].squeeze(-1)
-        # print("detections", beats_det.shape, downbeats_det.shape)
 
         beat_loss = self.loss(beats_det, beats_ann)
         downbeat_loss = self.loss(downbeats_det, downbeats_ann)
@@ -68,21 +67,36 @@ class PLTCN(L.LightningModule):
     def test_step(self, batch, batch_idx):
         x = batch["x"]
         beats_target = batch["beats_ann"].detach().cpu().numpy().squeeze()
+        downbeats_target = batch["downbeats_ann"].detach().cpu().numpy().squeeze()
         output = self(x)
+
         beats_act = output["beats"].squeeze().detach().cpu().numpy()
+        downbeats_act = output["downbeats"].squeeze().detach().cpu().numpy()
+        print("beats_act", beats_act.shape)
+        print("downbeats_act", downbeats_act.shape)
 
         beat_dbn = madmom.features.beats.DBNBeatTrackingProcessor(
             min_bpm=55.0, max_bpm=215.0, fps=100, transition_lambda=100, online=False
         )
         beats_prediction = beat_dbn(beats_act)
 
+        downbeat_dbn = madmom.features.downbeats.DBNDownBeatTrackingProcessor(
+            beats_per_bar=[2, 3, 4], min_bpm=55.0, max_bpm=215.0, fps=100,
+            transition_lambda=100, threshold=0.005
+        )
+        downbeats_prediction = downbeat_dbn(downbeats_act)
+        print("downbeats_activation", downbeats_act)
+        print("downbeats_prediction", downbeats_prediction)
+
         # add mir_eval call to calculate metrics
         # check
         # https://mir-evaluation.github.io/mir_eval/#module-mir_eval.beat
         # if you want to explore other metrics
-        fmeasure = mir_eval.beat.f_measure(beats_target, beats_prediction)
+        beat_fmeasure = mir_eval.beat.f_measure(beats_target, beats_prediction)
+        downbeat_fmeasure = mir_eval.beat.f_measure(downbeats_target, downbeats_prediction)
         self.test_fmeasure.append(fmeasure)
-        self.log("test_fmeasure", fmeasure, on_step=True)
+        self.log("beat_fmeasure", beat_fmeasure, on_step=True)
+        self.log("downbeat_fmeasure", downbeat_fmeasure, on_step=True)
 
         return fmeasure
 
