@@ -19,7 +19,7 @@ if __name__ == "__main__":
     PARAMS = PARAMS_TRAIN
 
     # load dataset
-    gtzan_mini = mirdata.initialize("gtzan_genre", version="mini")
+    gtzan_mini = mirdata.initialize("gtzan_genre", data_home="/media/gigibs/DD02EEEC68459F17/datasets/gtzan_genre")
     gtzan_mini.download(['index'])
 
     dataset_tracks = gtzan_mini.load_tracks()
