@@ -15,12 +15,14 @@ class PLTCN(L.LightningModule):
         self.learning_rate = params["LEARNING_RATE"]
         self.test_fmeasure = []
 
+
     def _get_loss_fn(self, loss):
-        # for now using only BCE
         return losses.masked_binary_cross_entropy
+
 
     def forward(self, x):
         return self.model(x)
+
 
     def training_step(self, batch, batch_idx):
         # get annotations
@@ -28,12 +30,12 @@ class PLTCN(L.LightningModule):
         beats_ann = batch["beats"]
         downbeats_ann = batch["downbeats"]
 
-        # get detections
+        # get predictions
         output = self(x)
         beats_det = output["beats"].squeeze(-1)
         downbeats_det = output["downbeats"].squeeze(-1)
 
-        # calculate losses
+        # compute losses and log them
         beat_loss = self.loss(beats_det, beats_ann)
         downbeat_loss = self.loss(downbeats_det, downbeats_ann)
         loss = beat_loss + downbeat_loss
@@ -45,15 +47,19 @@ class PLTCN(L.LightningModule):
 
         return loss
 
+
     def validation_step(self, batch, batch_idx):
+        # get annotations
         x = batch["x"]
         beats_ann = batch["beats"]
         downbeats_ann = batch["downbeats"]
 
+        # get predictions
         output = self(x)
         beats_det = output["beats"].squeeze(-1)
         downbeats_det = output["downbeats"].squeeze(-1)
 
+        # compute losses and log them
         beat_loss = self.loss(beats_det, beats_ann)
         downbeat_loss = self.loss(downbeats_det, downbeats_ann)
         loss = beat_loss + downbeat_loss
@@ -63,6 +69,7 @@ class PLTCN(L.LightningModule):
         self.log("val_loss", loss, prog_bar=True, on_epoch=True)
 
         return loss
+
 
     def test_step(self, batch, batch_idx):
         x = batch["x"]
@@ -100,10 +107,6 @@ class PLTCN(L.LightningModule):
 
         return fmeasure
 
-    # Uncomment to see the metrics per item
-    # def on_test_epoch_end(self):
-    #     for idx, v in enumerate(self.test_fmeasure):
-    #         self.log(f"item_{idx}", v)
 
     def configure_optimizers(self):
         optimizer = torch.optim.RAdam(self.parameters(), lr=0.005)
