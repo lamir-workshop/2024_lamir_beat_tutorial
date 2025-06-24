@@ -8,12 +8,12 @@ authored by [Giovana Morais](https://github.com/giovana-morais)
 
 ## file overview
 
-* `config.py`: has hyperparameters for training and finetuning.
-* `dataloader.py`: has the dataloader for audio and beat data
-* `model.py`: has the torch beat tracking model
-* `pl_model.py`: implements pytorch lighning model
+* `config.py`: hyperparameters for training and finetuning.
+* `dataloader.py`: dataloader for audio and beat data
+* `model.py`: torch beat tracking model
+* `pl_model.py`: pytorch lightning model
 * `train.py`: training script
-* `finetune.py`: finetuning script (BRID only for now)
+* `finetune.py`: finetuning script 
 
 ## installing dependencies
 ```bash
@@ -49,7 +49,7 @@ PARAMS_FINETUNE = {
 }
 ```
 
-run the script by specifying in which dataset you want to finetune it:
+run the script by specifying which dataset you want to finetune it:
 
 ```bash
 python finetune.py --dataset=brid
