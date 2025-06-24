@@ -47,7 +47,6 @@ class BeatData(Dataset):
         if audio.shape[0] == 2:
             audio = audio.mean(axis=0)
 
-        # print("audio.shape", track.audio[0].shape)
         s = madmom.audio.Signal(audio, sr)
         x = self.pre_processor(s)
 
@@ -57,29 +56,42 @@ class BeatData(Dataset):
 
         x_padded = np.concatenate((pad_start, x, pad_stop))
 
-        beats = track.beats.times
-        beats = madmom.utils.quantize_events(beats, fps=self.fps, length=len(x))
-        beats = beats.astype("float32")
+        try:
+            beats_times = track.beats.times
+            beats = madmom.utils.quantize_events(
+                beats_times, fps=self.fps, length=len(x)
+            )
+            beats = beats.astype("float32")
+        except Exception as e:
+            print(f"{tid} has no beat information. masking\n")
+            beats = np.ones(len(x), dtype="float32") * MASK_VALUE
+            beats_times = np.zeros(len(x))
 
         if self.widen:
             # we skip masked values
             if not np.allclose(beats, -1):
                 np.maximum(beats, maximum_filter1d(beats, size=3) * 0.5, out=beats)
 
-        # try:
-        #     downbeats = beats.positions.astype(int) == 1
-        #     downbeats = t.beats.times[downbeats]
-        #     downbeats = madmom.utils.quantize_events(downbeats, fps=self.fps, length=len(x))
-        # except AttributeError:
-        #     print(f"{tid} has no downbeat information. masking\n")
-        #     downbeats = np.ones(len(x), dtype="float32") * MASK_VALUE
+        try:
+            downbeats_positions = track.beats.positions.astype(int) == 1
+            downbeats_times = track.beats.times[downbeats_positions]
+            downbeats = madmom.utils.quantize_events(
+                downbeats_times, fps=self.fps, length=len(x)
+            )
+            downbeats = downbeats.astype("float32")
+        except Exception as e:
+            print(f"{tid} has no downbeat information. masking\n")
+            print(e)
+            downbeats = np.ones(len(x), dtype="float32") * MASK_VALUE
+            downbeats_times = np.zeros(len(x))
 
         data["tid"] = tid
         # FIXME: adding this because torch is bothered by our batchsize=1
         data["x"] = np.expand_dims(x_padded, axis=0)
         data["beats"] = beats
-        data["beats_ann"] = track.beats.times
-        # data["downbeats"] = downbeats
+        data["beats_ann"] = beats_times
+        data["downbeats"] = downbeats
+        data["downbeats_ann"] = downbeats_times
         # data["tempo"] = tempo
 
         return data
@@ -122,11 +134,14 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(train_data)
 
     for i in train_dataloader:
-        in_, out = i["x"], i["beats"]
-        print(in_.shape)
-        print(out.shape)
-        print(out)
-        test = out.detach().cpu()
+        x, beats, downbeats = i["x"], i["beats"], i["downbeats"]
+        print("x.shape", x.shape)
+        print("beats.shape", beats.shape)
+        print("downbeats.shape", downbeats.shape)
+        print("beats", beats)
+        print("downbeats", downbeats)
+
+        test = beats.detach().cpu()
         print(len(test[test > 0]))
         print(dataset_tracks[train_keys[0]].beats.times)
         break
