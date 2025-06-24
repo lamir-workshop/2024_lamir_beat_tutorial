@@ -47,7 +47,6 @@ class BeatData(Dataset):
         if audio.shape[0] == 2:
             audio = audio.mean(axis=0)
 
-        # print("audio.shape", track.audio[0].shape)
         s = madmom.audio.Signal(audio, sr)
         x = self.pre_processor(s)
 
@@ -57,9 +56,15 @@ class BeatData(Dataset):
 
         x_padded = np.concatenate((pad_start, x, pad_stop))
 
-        beats = track.beats.times
-        beats = madmom.utils.quantize_events(beats, fps=self.fps, length=len(x))
-        beats = beats.astype("float32")
+        try:
+            beats_times = track.beats.times
+            beats = madmom.utils.quantize_events(beats_times, fps=self.fps, length=len(x))
+            beats = beats.astype("float32")
+        except Exception as e:
+            print(f"{tid} has no beat information. masking\n")
+            beats = np.ones(len(x), dtype="float32") * MASK_VALUE
+            beats_times = np.zeros(len(x))
+
 
         if self.widen:
             # we skip masked values
@@ -75,12 +80,13 @@ class BeatData(Dataset):
             print(f"{tid} has no downbeat information. masking\n")
             print(e)
             downbeats = np.ones(len(x), dtype="float32") * MASK_VALUE
+            downbeats_times = np.zeros(len(x))
 
         data["tid"] = tid
         # FIXME: adding this because torch is bothered by our batchsize=1
         data["x"] = np.expand_dims(x_padded, axis=0)
         data["beats"] = beats
-        data["beats_ann"] = track.beats.times
+        data["beats_ann"] = beats_times
         data["downbeats"] = downbeats
         data["downbeats_ann"] = downbeats_times
         # data["tempo"] = tempo

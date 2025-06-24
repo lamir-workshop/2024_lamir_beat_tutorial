@@ -20,6 +20,7 @@ if __name__ == "__main__":
 
     # load dataset
     gtzan_mini = mirdata.initialize("gtzan_genre", data_home="/media/gigibs/DD02EEEC68459F17/datasets/gtzan_genre")
+    # gtzan_mini = mirdata.initialize("gtzan_genre", version="mini")
     gtzan_mini.download(['index'])
 
     dataset_tracks = gtzan_mini.load_tracks()
@@ -66,6 +67,7 @@ if __name__ == "__main__":
         project="LAMIR_beat_tutorial", name=f"TCN_train_{timestamp}", config=PARAMS
     )
     logger = WandbLogger()
+    logger.watch(model, "all")
 
     trainer = L.Trainer(
         max_epochs=PARAMS["N_EPOCHS"],

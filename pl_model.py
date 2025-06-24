@@ -1,6 +1,11 @@
+"""
+PyTorch Lightning model. This module defines the train, validation and test
+steps.
+"""
+import lightning as L
 import madmom
 import mir_eval
-import lightning as L
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -13,7 +18,8 @@ class PLTCN(L.LightningModule):
         self.model = model
         self.loss = self._get_loss_fn(params["LOSS"])
         self.learning_rate = params["LEARNING_RATE"]
-        self.test_fmeasure = []
+        self.test_beat_fmeasure = []
+        self.test_downbeat_fmeasure = []
 
 
     def _get_loss_fn(self, loss):
@@ -59,11 +65,12 @@ class PLTCN(L.LightningModule):
         beats_det = output["beats"].squeeze(-1)
         downbeats_det = output["downbeats"].squeeze(-1)
 
-        # compute losses and log them
+        # compute losses
         beat_loss = self.loss(beats_det, beats_ann)
         downbeat_loss = self.loss(downbeats_det, downbeats_ann)
         loss = beat_loss + downbeat_loss
 
+        # log them
         self.log("val_beat_loss", beat_loss, prog_bar=True, on_epoch=True)
         self.log("val_downbeat_loss", downbeat_loss, prog_bar=True, on_epoch=True)
         self.log("val_loss", loss, prog_bar=True, on_epoch=True)
@@ -72,40 +79,49 @@ class PLTCN(L.LightningModule):
 
 
     def test_step(self, batch, batch_idx):
+        # get annotations
         x = batch["x"]
         beats_target = batch["beats_ann"].detach().cpu().numpy().squeeze()
         downbeats_target = batch["downbeats_ann"].detach().cpu().numpy().squeeze()
-        output = self(x)
 
+        # get activations
+        output = self(x)
         beats_act = output["beats"].squeeze().detach().cpu().numpy()
         downbeats_act = output["downbeats"].squeeze().detach().cpu().numpy()
-        print("beats_act", beats_act.shape)
-        print("downbeats_act", downbeats_act.shape)
 
+        # define beat and downbeat DBN
         beat_dbn = madmom.features.beats.DBNBeatTrackingProcessor(
             min_bpm=55.0, max_bpm=215.0, fps=100, transition_lambda=100, online=False
         )
-        beats_prediction = beat_dbn(beats_act)
-
         downbeat_dbn = madmom.features.downbeats.DBNDownBeatTrackingProcessor(
             beats_per_bar=[2, 3, 4], min_bpm=55.0, max_bpm=215.0, fps=100,
-            transition_lambda=100, threshold=0.005
+            transition_lambda=100
         )
-        downbeats_prediction = downbeat_dbn(downbeats_act)
-        print("downbeats_activation", downbeats_act)
-        print("downbeats_prediction", downbeats_prediction)
 
-        # add mir_eval call to calculate metrics
-        # check
-        # https://mir-evaluation.github.io/mir_eval/#module-mir_eval.beat
-        # if you want to explore other metrics
+        beats_prediction = beat_dbn(beats_act)
+        # following TF implementation, downbeat DBN receives the combined
+        # beat/downbeat activations
+        combined_act = np.vstack((np.maximum(beats_act - downbeats_act,
+            0),
+            downbeats_act)).T
+        downbeats_prediction = downbeat_dbn(combined_act)
+        # the combined activation results in 2d predictions, [beat_time,
+        # beat_position]. therefore we need to filter only the downbeats
+        # timestamps for the fmeasure calculation.
+        downbeats_timestamps = downbeats_prediction[downbeats_prediction[:, 1] == 1][:, 0]
+
+        # calculate f-measure
         beat_fmeasure = mir_eval.beat.f_measure(beats_target, beats_prediction)
-        downbeat_fmeasure = mir_eval.beat.f_measure(downbeats_target, downbeats_prediction)
-        self.test_fmeasure.append(fmeasure)
+        downbeat_fmeasure = mir_eval.beat.f_measure(downbeats_target, downbeats_timestamps)
+
+        # log it
+        self.test_beat_fmeasure.append(beat_fmeasure)
+        self.test_downbeat_fmeasure.append(downbeat_fmeasure)
+
         self.log("beat_fmeasure", beat_fmeasure, on_step=True)
         self.log("downbeat_fmeasure", downbeat_fmeasure, on_step=True)
 
-        return fmeasure
+        return [beat_fmeasure, downbeat_fmeasure]
 
 
     def configure_optimizers(self):
