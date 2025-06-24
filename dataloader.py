@@ -67,12 +67,13 @@ class BeatData(Dataset):
                 np.maximum(beats, maximum_filter1d(beats, size=3) * 0.5, out=beats)
 
         try:
-            downbeats = track.beats.positions.astype(int) == 1
-            downbeats = track.beats.times[downbeats]
-            downbeats = madmom.utils.quantize_events(downbeats, fps=self.fps, length=len(x))
+            downbeats_positions = track.beats.positions.astype(int) == 1
+            downbeats_times = track.beats.times[downbeats_positions]
+            downbeats = madmom.utils.quantize_events(downbeats_times, fps=self.fps, length=len(x))
             downbeats = downbeats.astype("float32")
         except Exception as e:
             print(f"{tid} has no downbeat information. masking\n")
+            print(e)
             downbeats = np.ones(len(x), dtype="float32") * MASK_VALUE
 
         data["tid"] = tid
@@ -81,6 +82,7 @@ class BeatData(Dataset):
         data["beats"] = beats
         data["beats_ann"] = track.beats.times
         data["downbeats"] = downbeats
+        data["downbeats_ann"] = downbeats_times
         # data["tempo"] = tempo
 
         return data
