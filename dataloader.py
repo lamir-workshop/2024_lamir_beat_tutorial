@@ -58,13 +58,14 @@ class BeatData(Dataset):
 
         try:
             beats_times = track.beats.times
-            beats = madmom.utils.quantize_events(beats_times, fps=self.fps, length=len(x))
+            beats = madmom.utils.quantize_events(
+                beats_times, fps=self.fps, length=len(x)
+            )
             beats = beats.astype("float32")
         except Exception as e:
             print(f"{tid} has no beat information. masking\n")
             beats = np.ones(len(x), dtype="float32") * MASK_VALUE
             beats_times = np.zeros(len(x))
-
 
         if self.widen:
             # we skip masked values
@@ -74,7 +75,9 @@ class BeatData(Dataset):
         try:
             downbeats_positions = track.beats.positions.astype(int) == 1
             downbeats_times = track.beats.times[downbeats_positions]
-            downbeats = madmom.utils.quantize_events(downbeats_times, fps=self.fps, length=len(x))
+            downbeats = madmom.utils.quantize_events(
+                downbeats_times, fps=self.fps, length=len(x)
+            )
             downbeats = downbeats.astype("float32")
         except Exception as e:
             print(f"{tid} has no downbeat information. masking\n")

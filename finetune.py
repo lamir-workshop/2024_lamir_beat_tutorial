@@ -42,21 +42,20 @@ def _load_brid(download=False):
 
     return dataset_tracks, dataset_keys
 
+
 def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dataset",
         type=str,
         required=True,
-        help="dataset name. supported options are ['brid', 'candombe']"
+        help="dataset name. supported options are ['brid', 'candombe']",
     )
     parser.add_argument(
-        "--download",
-        action="store_true",
-        required=False,
-        help="download the dataset"
+        "--download", action="store_true", required=False, help="download the dataset"
     )
     return parser
+
 
 if __name__ == "__main__":
     # load params
