@@ -1,8 +1,12 @@
 # LAMIR: Beat Tracking Tutorial
 
-source code for the 2024 LAMIR beat tracking tutorial
+source code for the 2024 LAMIR beat tracking tutorial. 
 
-authored by [Giovana Morais](https://github.com/giovana-morais)
+in this repo, we implement a PyTorch version of the TCN proposed by Sebastian Böck and 
+Matthew E. P. Davies in the paper 
+["DECONSTRUCT, ANALYSE, RECONSTRUCT: HOW TO IMPROVE TEMPO, BEAT, AND DOWNBEAT ESTIMATION"](https://program.ismir2020.net/static/final_papers/223.pdf).
+
+code authored by [Giovana Morais](https://github.com/giovana-morais)
 
 ---
 
